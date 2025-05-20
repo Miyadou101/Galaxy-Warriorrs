@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Galaxy Warriors</title>
+
+  <!-- Main styles -->
+  <link href="style.css" rel="stylesheet" />
+  <link href="style_shooter.css" rel="stylesheet" />
+
+  <!-- Arcade font from Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=PressStart2P&display=swap" rel="stylesheet" />
+
+  <style>
+    /* Inline fallback: Pixelated arcade font styling */
+    @font-face {
+      font-family: 'PressStart2P';
+      src: url('https://fonts.gstatic.com/s/pressstart2p/v14/e3t4euO8T0W6zUPdJOPVF8mW04kZ8hFtUvKFDik.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    .arcade-title {
+      font-family: 'PressStart2P', monospace;
+      font-size: 2.5rem;
+      color: #0ff; /* Neon glow effect */
+      text-shadow:
+        0 0 5px #0ff,
+        0 0 10px #0ff,
+        0 0 20px #0ff,
+        0 0 30px #0ff;
+      margin: 1rem 0;
+      letter-spacing: 0.2rem;
+      user-select: none;
+      -webkit-font-smoothing: none;
+      -moz-osx-font-smoothing: grayscale;
+      image-rendering: pixelated;
+    }
+
+    body {
+      background-color: #000;
+      color: #0ff;
+      font-family: 'PressStart2P', monospace;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    header, main {
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .menu-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .btn {
+      font-family: 'PressStart2P', monospace;
+      font-size: 1rem;
+      padding: 1rem 1.5rem;
+      color: #0ff;
+      background: transparent;
+      border: 2px solid #0ff;
+      cursor: pointer;
+      border-radius: 6px;
+      text-decoration: none;
+      user-select: none;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .btn:hover,
+    .btn:focus {
+      background-color: #0ff;
+      color: #000;
+      outline: none;
+    }
+
+    /* Fullscreen modal background */
+    .modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal[hidden] {
+      display: none !important;
+    }
+
+    /* Modal inner content box */
+    .modal-content {
+      background: #111;
+      border: 3px solid #0ff;
+      padding: 1.5rem 2rem;
+      max-width: 320px;
+      color: #0ff;
+      font-size: 0.75rem;
+      text-align: center;
+      border-radius: 8px;
+      box-shadow: 0 0 20px #0ff;
+      user-select: text;
+    }
+
+    .modal-content h2 {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      user-select: none;
+    }
+
+    .close-btn {
+      margin-top: 1rem;
+      font-family: 'PressStart2P', monospace;
+      font-size: 0.75rem;
+      background: transparent;
+      border: 2px solid #0ff;
+      color: #0ff;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .close-btn:hover,
+    .close-btn:focus {
+      background-color: #0ff;
+      color: #000;
+      outline: none;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1 class="arcade-title">GALAXY WARRIORS</h1>
+  </header>
+
+  <main>
+    <nav class="menu-buttons">
+      <!-- Link to launch the main game -->
+      <a href="game.html" class="btn" aria-label="Start Galaxy Warriors Game">Start Game</a>
+
+      <!-- Buttons to open modals -->
+      <button id="tutorialBtn" class="btn" aria-haspopup="dialog" aria-controls="tutorialModal">Tutorial</button>
+      <button id="settingsBtn" class="btn" aria-haspopup="dialog" aria-controls="settingsModal">Settings</button>
+    </nav>
+  </main>
+
+  <!-- Tutorial Modal -->
+  <div id="tutorialModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle" tabindex="-1" hidden>
+    <div class="modal-content">
+      <h2 id="tutorialTitle">Tutorial</h2>
+      <p>Use arrow keys to move your spaceship.<br />Press SPACE to shoot.</p>
+      <p>Destroy enemies:<br />Enemy 1 is fast and dies with one hit.<br />Enemy 2 is slower and takes two hits.</p>
+      <button class="close-btn" id="closeTutorial" aria-label="Close Tutorial Modal">Close</button>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" tabindex="-1" hidden>
+    <div class="modal-content">
+      <h2 id="settingsTitle">Settings</h2>
+
+      <!-- Volume control input -->
+      <label for="volumeControl">Sound Volume:</label>
+      <input 
+        type="range" 
+        id="volumeControl" 
+        min="0" max="1" step="0.01" 
+        value="1" 
+        style="width: 150px;"
+        aria-valuemin="0" aria-valuemax="1" aria-valuenow="1" 
+      />
+      <span id="volumePercent">100%</span>
+
+      <p>Adjust sound volume for the game effects and music.</p>
+      <button class="close-btn" id="closeSettings" aria-label="Close Settings Modal">Close</button>
+    </div>
+  </div>
+
+  <script>
+    // Utility: Opens a modal
+    function openModal(modal) {
+      modal.hidden = false;
+      modal.style.display = 'flex';
+      modal.focus(); // Set focus for accessibility
+      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    // Utility: Closes a modal
+    function closeModal(modal) {
+      modal.style.display = 'none';
+      modal.hidden = true;
+      document.body.style.overflow = ''; // Restore scrolling
+    }
+
+    // Grab modal-related DOM elements
+    const tutorialBtn = document.getElementById('tutorialBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const tutorialModal = document.getElementById('tutorialModal');
+    const settingsModal = document.getElementById('settingsModal');
+    const closeTutorial = document.getElementById('closeTutorial');
+    const closeSettings = document.getElementById('closeSettings');
+
+    // Open modals on button click
+    tutorialBtn.addEventListener('click', () => openModal(tutorialModal));
+    settingsBtn.addEventListener('click', () => openModal(settingsModal));
+
+    // Close modals on close button
+    closeTutorial.addEventListener('click', () => closeModal(tutorialModal));
+    closeSettings.addEventListener('click', () => closeModal(settingsModal));
+
+    // Close modals when clicking outside content
+    window.addEventListener('click', e => {
+      if (e.target === tutorialModal) closeModal(tutorialModal);
+      if (e.target === settingsModal) closeModal(settingsModal);
+    });
+
+    // ESC key closes any open modal
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        if (!tutorialModal.hidden) closeModal(tutorialModal);
+        if (!settingsModal.hidden) closeModal(settingsModal);
+      }
+    });
+
+    // Volume control setup
+    const volumeControl = document.getElementById('volumeControl');
+    const volumePercent = document.getElementById('volumePercent');
+
+    // Load saved volume from localStorage if available
+    const savedVolume = localStorage.getItem('gw_soundVolume');
+    if (savedVolume !== null) {
+      volumeControl.value = savedVolume;
+      volumePercent.textContent = Math.round(savedVolume * 100) + '%';
+    } else {
+      volumeControl.value = 1;
+      volumePercent.textContent = '100%';
+    }
+
+    // Update volume in real-time and persist it
+    volumeControl.addEventListener('input', () => {
+      const vol = parseFloat(volumeControl.value);
+      volumePercent.textContent = Math.round(vol * 100) + '%';
+      localStorage.setItem('gw_soundVolume', vol);
+      // Game logic can access this volume via localStorage
+    });
+  </script>
+</body>
+</html>

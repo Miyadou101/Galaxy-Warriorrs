@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Galaxy Warriors - Game</title>
+
+  <!-- Main Stylesheets -->
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style_shooter.css" />
+
+  <!-- Orbitron Font for Cohesive Look -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Orbitron', sans-serif;
+      background-color: black;
+      color: white;
+      overflow: hidden;
+    }
+
+    #gameCanvas {
+      display: block;
+      margin: auto;
+      background: url('Images/background.png') no-repeat center center;
+      background-size: cover;
+      border: 2px solid white;
+    }
+  </style>
+</head>
+<body>
+  <!-- Game Canvas -->
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+  <script>
+    // Failsafe: Ensure volume is loaded from localStorage with a fallback
+    try {
+      const savedVolume = parseFloat(localStorage.getItem('gw_soundVolume'));
+      const soundVolume = isNaN(savedVolume) ? 1 : Math.min(Math.max(savedVolume, 0), 1);
+      window.GW_VOLUME = soundVolume; // Global volume hook for shooter.js
+    } catch (error) {
+      console.warn('Failed to load volume setting. Defaulting to 1.', error);
+      window.GW_VOLUME = 1;
+    }
+  </script>
+
+  <!-- Game Logic -->
+  <script src="shooter.js"></script>
+</body>
+</html>

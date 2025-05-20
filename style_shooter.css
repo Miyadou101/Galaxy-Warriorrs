@@ -1,0 +1,52 @@
+/* Styles specific to the game HUD and gameover popup */
+
+#gameCanvas {
+  display: block;
+  margin: 20px auto;
+  background: black;
+  box-shadow: 0 0 25px #61dafb, 0 0 60px rgba(97, 218, 251, 0.3);
+  border-radius: 12px;
+  border: 2px solid #61dafb;
+}
+
+/* HUD text styling */
+.hud-text {
+  position: absolute;
+  font-family: 'Orbitron', sans-serif;
+  color: #61dafb;
+  font-size: 20px;
+  user-select: none;
+  pointer-events: none;
+  text-shadow: 0 0 5px rgba(97, 218, 251, 0.7), 0 0 10px rgba(97, 218, 251, 0.4);
+  letter-spacing: 1px;
+}
+
+/* Positions for HUD on game canvas */
+#hud-lives {
+  position: absolute;
+  top: 15px;
+  left: 20px;
+}
+
+#hud-level {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+#hud-score {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+}
+
+/* Optional enhancements for popup buttons (drawn via JS, but cursor class can be pre-defined) */
+.popup-button {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.popup-button:hover {
+  filter: brightness(1.3);
+}

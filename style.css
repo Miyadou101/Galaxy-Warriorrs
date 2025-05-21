@@ -49,6 +49,16 @@ main {
   align-items: center;
 }
 
+.background-container {
+  max-width: 100%;
+  height: auto;
+  background-image: url('path/to/image.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+
 .btn {
   background: #0a192f;
   color: #61dafb;

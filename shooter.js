@@ -227,22 +227,129 @@ function drawExplosions() {
     });
 }
 
+function resetGame() {
+  // Reset all game variables to initial state
+  player.x = 400;
+  player.y = 500;
+  player.lives = 3;
+  player.invincible = false;
+  player.flickerCounter = 0;
+  
+  bullets = [];
+  enemies = [];
+  enemyBullets = [];
+  explosions = [];
+  
+  score = 0;
+  level = 1;
+  gameOver = false;
+  paused = false;
+  
+  maxBullets = 3;
+  enemyCap = 10;
+  
+  sounds.startup.play();
+}
+
+
+function drawGameOverPopup() {
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = 'white';
+  ctx.font = '48px "Orbitron", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2 - 80);
+
+  ctx.font = '24px "Orbitron", sans-serif';
+
+  // Draw buttons
+  const btnWidth = 180;
+  const btnHeight = 50;
+  const btnY = canvas.height / 2;
+  const btnSpacing = 30;
+  const btnX1 = canvas.width / 2 - btnWidth - btnSpacing / 2;
+  const btnX2 = canvas.width / 2 + btnSpacing / 2;
+
+  // Button backgrounds
+  ctx.fillStyle = '#222';
+  ctx.fillRect(btnX1, btnY, btnWidth, btnHeight);
+  ctx.fillRect(btnX2, btnY, btnWidth, btnHeight);
+
+  // Button text
+  ctx.fillStyle = 'white';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Restart', btnX1 + btnWidth / 2, btnY + btnHeight / 2);
+  ctx.fillText('Quit to Menu', btnX2 + btnWidth / 2, btnY + btnHeight / 2);
+
+  // Store button areas for click detection
+  gameOverButtons = [
+    { x: btnX1, y: btnY, w: btnWidth, h: btnHeight, action: 'restart' },
+    { x: btnX2, y: btnY, w: btnWidth, h: btnHeight, action: 'quit' },
+  ];
+}
+
+let gameOverButtons = [];
+
+canvas.addEventListener('click', function (e) {
+  if (!gameRunning) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    gameOverButtons.forEach(btn => {
+      if (mx >= btn.x && mx <= btn.x + btn.w && my >= btn.y && my <= btn.y + btn.h) {
+        if (btn.action === 'restart') {
+          resetGame();
+        } else if (btn.action === 'quit') {
+          window.location.href = 'index.html';
+        }
+      }
+    });
+  }
+});
+
+canvas.addEventListener('click', function (e) {
+  if (gameOver) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    gameOverButtons.forEach(btn => {
+      if (mx >= btn.x && mx <= btn.x + btn.w && my >= btn.y && my <= btn.y + btn.h) {
+        if (btn.action === 'restart') {
+          resetGame();
+        } else if (btn.action === 'quit') {
+          window.location.href = 'index.html';
+        }
+      }
+    });
+  }
+});
+
+
 function drawHUD() {
-    ctx.fillStyle = "#00ffff";
-    ctx.font = "bold 20px Courier New";
-    ctx.fillText("SCORE: " + score, 20, 30);
-    ctx.fillText("LIVES: " + player.lives, 20, 60);
-    ctx.fillText("LEVEL: " + level, 20, 90);
+    ctx.fillStyle = 'cyan';
+    ctx.font = '20px "Orbitron", sans-serif';
+
+    ctx.textAlign = 'left';
+    ctx.fillText("SCORE: " + score, 20, 20);
+
+    ctx.textAlign = 'center';
+    ctx.fillText("LIVES: " + player.lives, canvas.width / 2, 20);
+    
+      ctx.textAlign = 'right';
+    ctx.fillText("LEVEL: " + level, canvas.width - 20, 20);
     if (paused) {
         ctx.fillStyle = "yellow";
         ctx.fillText("PAUSED", 350, 300);
     }
     if (gameOver) {
-        ctx.fillStyle = "#ff0066";
-        ctx.font = "bold 28px Courier New";
-        ctx.fillText("GAME OVER - Press R to Restart", 180, 300);
+    drawGameOverPopup();
     }
 }
+
+    
+
 
 function update() {
     if (paused || gameOver) return;

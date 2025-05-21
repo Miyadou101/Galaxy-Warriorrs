@@ -191,6 +191,20 @@
     </div>
   </div>
 
+  
+<script>
+  const sfxSlider = document.getElementById("sfxVolume");
+  const musicSlider = document.getElementById("musicVolume");
+
+  sfxSlider.addEventListener("input", e => {
+    window.dispatchEvent(new CustomEvent("volumeChange", { detail: { type: "sfx", value: e.target.value } }));
+  });
+
+  musicSlider.addEventListener("input", e => {
+    window.dispatchEvent(new CustomEvent("volumeChange", { detail: { type: "music", value: e.target.value } }));
+  });
+</script>
+
   <script>
     // Utility: Opens a modal
     function openModal(modal) {

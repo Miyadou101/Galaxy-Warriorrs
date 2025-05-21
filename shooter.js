@@ -1,447 +1,294 @@
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+// Galaxy Warriors Release 2.1 "ENEMY APPROACHING HYBRID"
+
+// -------------------- CANVAS SETUP --------------------
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 canvas.width = 800;
 canvas.height = 600;
 
-// Images
-const bg = new Image();
-bg.src = 'Images/background.png';
-
+// -------------------- IMAGES --------------------
 const playerImg = new Image();
-playerImg.src = 'Images/spaceship.png';
+playerImg.src = "Images/player.png";
 
-const bulletImg = new Image();
-bulletImg.src = 'Images/bullet.png';
-
-const enemy1Img = new Image();
-enemy1Img.src = 'Images/enemy1.png';
-
-const enemy2Img = new Image();
-enemy2Img.src = 'Images/enemy2.png';
-
-// Sounds
-const shootSound = new Audio('Sounds/shoot.wav');
-const explosionSound = new Audio('Sounds/explosion.wav');
-const respawnSound = new Audio('Sounds/respawn.wav');
-
-// Volume support
-function applyVolume() {
-  let vol = localStorage.getItem('gw_soundVolume');
-  if (vol === null) vol = '100'; // default 100%
-  vol = parseInt(vol);
-  if (isNaN(vol)) vol = 100;
-  vol = Math.min(Math.max(vol, 0), 100);
-  const v = vol / 100;
-
-  shootSound.volume = v;
-  explosionSound.volume = v;
-  respawnSound.volume = v;
+const explosionFrames = [];
+for (let i = 1; i <= 9; i++) {
+    const img = new Image();
+    img.src = `Images/explosion${i}.png`;
+    explosionFrames.push(img);
 }
-applyVolume();
 
-window.addEventListener('storage', (e) => {
-  if (e.key === 'gw_soundVolume') applyVolume();
-});
-
-// Game state
-let player = {
-  x: 370,
-  y: 500,
-  width: 60,
-  height: 60,
-  speed: 6,
-  invincible: false,
-  invincibilityTimer: 0,
+const enemyImages = {
+    red1: "Images/red1.png",
+    red2: "Images/red2.png",
+    blue1: "Images/blue1.png",
+    blue2: "Images/blue2.png",
+    green1: "Images/green1.png",
+    green2: "Images/green2.png"
 };
 
+// -------------------- SOUNDS --------------------
+const sounds = {
+    bullet: new Audio("Sounds/bullet.wav"),
+    explosion: new Audio("Sounds/explosion.wav"),
+    gameover: new Audio("Sounds/gameover.wav"),
+    respawn: new Audio("Sounds/respawn.wav"),
+    startup: new Audio("Sounds/startup.wav")
+};
+
+let volume = 1.0;
+function setVolume(vol) {
+    volume = vol;
+    for (let key in sounds) sounds[key].volume = volume;
+}
+
+// -------------------- VARIABLES --------------------
+let keys = {};
 let bullets = [];
 let enemies = [];
 let explosions = [];
-
 let score = 0;
-let lives = 3;
 let level = 1;
-let speedFactor = 1;
-let gameRunning = true;
-let keys = {};
-
-// Shooting cooldown to prevent spam
+let lives = 3;
+let isGameOver = false;
 let canShoot = true;
-const shootCooldownFrames = 15; // about 250ms at 60fps
-let shootCooldownCounter = 0;
+let gamePaused = false;
+let invincible = false;
+let invincibilityTimer = 0;
 
-// Explosion animation frames (1 to 9)
-const explosionFrames = [];
-for (let i = 1; i <= 9; i++) {
-  const img = new Image();
-  img.src = `Images/explosion${i}.png`;
-  explosionFrames.push(img);
-}
+const maxLevel = 99;
+const player = {
+    x: canvas.width / 2 - 25,
+    y: canvas.height - 60,
+    width: 50,
+    height: 50,
+    speed: 5
+};
 
-function spawnExplosion(x, y) {
-  explosions.push({ x, y, frame: 0, frameDelay: 0 });
-  explosionSound.currentTime = 0;
-  explosionSound.play();
-}
+// -------------------- EVENT LISTENERS --------------------
+document.addEventListener("keydown", e => {
+    keys[e.code] = true;
+    if (e.code === "Space") shoot();
+    if (e.code === "KeyP") gamePaused = !gamePaused;
+});
 
-function updateExplosions() {
-  for (let i = explosions.length - 1; i >= 0; i--) {
-    const ex = explosions[i];
-    ex.frameDelay++;
-    if (ex.frameDelay > 4) {
-      ex.frame++;
-      ex.frameDelay = 0;
-      if (ex.frame >= explosionFrames.length) {
-        explosions.splice(i, 1);
-      }
-    }
-  }
-}
+document.addEventListener("keyup", e => {
+    keys[e.code] = false;
+});
 
-function spawnEnemy() {
-  // Spawn probability scaled with speedFactor for pacing
-  const type = Math.random() < 0.8 ? 1 : 2;
-  const img = type === 1 ? enemy1Img : enemy2Img;
-  const w = 50;
-  const h = 50;
-  const x = Math.random() * (canvas.width - w);
-  const y = -h;
-  const speed = type === 1 ? 3 * speedFactor : 2.1 * speedFactor;
-  const health = type === 1 ? 1 : 2;
-  enemies.push({ x, y, w, h, speed, img, type, health });
-}
-
+// -------------------- SHOOT --------------------
 function shoot() {
-  if (!gameRunning || !canShoot) return;
-
-  bullets.push({ x: player.x + 23, y: player.y, w: 14, h: 30 });
-  shootSound.currentTime = 0;
-  shootSound.play();
-
-  canShoot = false;
-  shootCooldownCounter = 0;
+    if (!canShoot || isGameOver) return;
+    if (bullets.length >= getBulletLimit()) return;
+    bullets.push({ x: player.x + 22, y: player.y, speed: 7 });
+    sounds.bullet.currentTime = 0;
+    sounds.bullet.play();
 }
 
-function updateLevel() {
-  // Adjust level and speedFactor based on score thresholds
-  if (score >= 1000) level = 6;
-  else if (score >= 750) level = 5;
-  else if (score >= 500) level = 4;
-  else if (score >= 300) level = 3;
-  else if (score >= 150) level = 2;
-  else level = 1;
-
-  speedFactor = 1 + (level - 1) * 0.25;
+function getBulletLimit() {
+    if (level >= 12) return 13;
+    if (level >= 10) return 8;
+    if (level >= 7) return 7;
+    if (level >= 4) return 6;
+    if (level >= 2) return 5;
+    return 4;
 }
 
-function movePlayer() {
-  // Handle invincibility timer & flicker effect
-  if (player.invincible) {
-    player.invincibilityTimer--;
-    if (player.invincibilityTimer <= 0) {
-      player.invincible = false;
+// -------------------- ENEMY CLASS --------------------
+class Enemy {
+    constructor(type, color) {
+        this.type = type; // 1 or 2
+        this.color = color; // red, blue, green
+        this.hp = type;
+        this.width = 50;
+        this.height = 50;
+        this.x = Math.random() * (canvas.width - this.width);
+        this.y = -60;
+        this.speed = this.getBaseSpeed();
+        this.image = new Image();
+        this.image.src = enemyImages[`${color}${type}`];
+        this.zigzagOffset = Math.random() * 100;
     }
-  }
-  if (keys['ArrowLeft'] && player.x > 0) player.x -= player.speed;
-  if (keys['ArrowRight'] && player.x + player.width < canvas.width) player.x += player.speed;
-  if (keys['ArrowUp'] && player.y > 0) player.y -= player.speed;
-  if (keys['ArrowDown'] && player.y + player.height < canvas.height) player.y += player.speed;
+
+    getBaseSpeed() {
+        if (this.color === "red") return 0; // stationary
+        if (this.color === "blue") return 1.5 * getSpeedScale(); // zigzag slow
+        return 2.5 * getSpeedScale(); // green fast
+    }
+
+    update() {
+        if (this.color === "blue") {
+            this.y += this.speed;
+            this.x += Math.sin((this.y + this.zigzagOffset) / 30) * 2;
+        } else if (this.color === "green") {
+            this.y += this.speed;
+        }
+    }
+
+    draw() {
+        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+    }
 }
 
-function updateBullets() {
-  bullets = bullets.filter(b => b.y > -b.h);
-  bullets.forEach(b => b.y -= 8);
+function getSpeedScale() {
+    return Math.min(1 + Math.pow(level, 0.25), 6);
+}
+
+// -------------------- ENEMY LOGIC --------------------
+function spawnEnemies() {
+    const maxEnemies = 5 + Math.floor(level / 2);
+    if (enemies.length >= maxEnemies) return;
+
+    const spawnChance = 0.02 + level * 0.001; // progressive spawn rate
+    if (Math.random() < spawnChance) {
+        const colors = ["red", "blue", "green"];
+        const color = colors[Math.floor(Math.random() * 3)];
+        const type = Math.random() < 0.5 ? 1 : 2;
+        enemies.push(new Enemy(type, color));
+    }
 }
 
 function updateEnemies() {
-  enemies = enemies.filter(e => e.y < canvas.height + e.h);
-  enemies.forEach(e => (e.y += e.speed));
-}
-
-function checkCollisions() {
-  for (let ei = enemies.length - 1; ei >= 0; ei--) {
-    const e = enemies[ei];
-    // Bullets vs enemies
-    for (let bi = bullets.length - 1; bi >= 0; bi--) {
-      const b = bullets[bi];
-      if (
-        b.x < e.x + e.w &&
-        b.x + b.w > e.x &&
-        b.y < e.y + e.h &&
-        b.y + b.h > e.y
-      ) {
-        bullets.splice(bi, 1);
-        e.health--;
-        if (e.health <= 0) {
-          spawnExplosion(e.x, e.y);
-          enemies.splice(ei, 1);
-          score += 10;
-          break;
+    enemies.forEach((enemy, index) => {
+        enemy.update();
+        if (enemy.color === "red" && Math.random() < 0.01) {
+            // red enemies shoot
+            bullets.push({ x: enemy.x + 22, y: enemy.y + 50, speed: -4 });
         }
-      }
-    }
-    // Player vs enemies
-    if (
-      !player.invincible &&
-      player.x < e.x + e.w &&
-      player.x + player.width > e.x &&
-      player.y < e.y + e.h &&
-      player.y + player.height > e.y
-    ) {
-      spawnExplosion(player.x, player.y);
-      enemies.splice(ei, 1);
-      lives--;
-      player.invincible = true;
-      player.invincibilityTimer = 120; // 2 seconds at 60fps
-      respawnSound.currentTime = 0;
-      respawnSound.play();
-      if (lives <= 0) {
-        gameRunning = false;
-      }
-    }
-  }
-}
-
-function drawPlayer() {
-  if (player.invincible) {
-    // Flicker effect synced with CSS glow style: 5 frames visible, 5 invisible cycle
-    if (Math.floor(player.invincibilityTimer / 5) % 2 === 0) {
-      ctx.globalAlpha = 0.3;
-      ctx.shadowColor = '#61dafb';
-      ctx.shadowBlur = 15;
-      ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1;
-      return;
-    }
-  }
-  ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
-}
-
-function drawBullets() {
-  bullets.forEach(b => ctx.drawImage(bulletImg, b.x, b.y, b.w, b.h));
-}
-
-function drawEnemies() {
-  enemies.forEach(e => ctx.drawImage(e.img, e.x, e.y, e.w, e.h));
-}
-
-function drawHUD() {
-  ctx.fillStyle = '#61dafb';
-  ctx.font = '20px "Orbitron", sans-serif';
-  ctx.textBaseline = 'top';
-
-  ctx.shadowColor = '#61dafb';
-  ctx.shadowBlur = 10;
-
-  ctx.textAlign = 'left';
-  ctx.fillText(`Lives: ${lives}`, 20, 20);
-
-  ctx.textAlign = 'center';
-  ctx.fillText(`Level: ${level}`, canvas.width / 2, 20);
-
-  ctx.textAlign = 'right';
-  ctx.fillText(`Score: ${score}`, canvas.width - 20, 20);
-
-  ctx.shadowBlur = 0;
-}
-
-function drawBackground() {
-  ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-}
-
-let gameOverButtons = [];
-
-let hoveredButtonIndex = -1; // Track which button is hovered
-
-function drawGameOverPopup() {
-  // Draw translucent popup background box (not full screen overlay)
-  const popupWidth = 500;
-  const popupHeight = 200;
-  const popupX = (canvas.width - popupWidth) / 2;
-  const popupY = (canvas.height - popupHeight) / 2;
-
-  // Neon red background with some transparency
-  ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
-  ctx.shadowColor = 'red';
-  ctx.shadowBlur = 20;
-  ctx.fillRect(popupX, popupY, popupWidth, popupHeight);
-
-  // Draw popup border neon glow
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = 'red';
-  ctx.shadowColor = 'red';
-  ctx.shadowBlur = 25;
-  ctx.strokeRect(popupX, popupY, popupWidth, popupHeight);
-  ctx.shadowBlur = 0; // Reset shadowBlur for text
-
-  // Title text
-  ctx.fillStyle = 'red';
-  ctx.font = '48px "Orbitron", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText('Game Over', canvas.width / 2, popupY + 20);
-
-  // Buttons
-  const btnWidth = 180;
-  const btnHeight = 50;
-  const btnY = popupY + popupHeight - btnHeight - 30;
-  const btnSpacing = 30;
-  const btnX1 = canvas.width / 2 - btnWidth - btnSpacing / 2;
-  const btnX2 = canvas.width / 2 + btnSpacing / 2;
-
-  // Store button positions for click & hover detection
-  gameOverButtons = [
-    { x: btnX1, y: btnY, w: btnWidth, h: btnHeight, action: 'restart' },
-    { x: btnX2, y: btnY, w: btnWidth, h: btnHeight, action: 'quit' },
-  ];
-
-  gameOverButtons.forEach((btn, i) => {
-    // Draw button background - neon glow if hovered, else solid dark
-    if (i === hoveredButtonIndex) {
-      ctx.shadowColor = 'red';
-      ctx.shadowBlur = 20;
-      ctx.fillStyle = '#440000';
-      ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
-
-      // Neon border
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = 'red';
-      ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
-
-      ctx.shadowBlur = 0;
-    } else {
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = '#222';
-      ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
-      ctx.strokeStyle = 'darkred';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
-    }
-
-    // Draw button text centered vertically and horizontally
-    ctx.fillStyle = 'red';
-    ctx.font = '24px "Orbitron", sans-serif';
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
-
-    let text = btn.action === 'restart' ? 'Restart' : 'Quit to Menu';
-    ctx.fillText(text, btn.x + btn.w / 2, btn.y + btn.h / 2);
-  });
-}
-
-// Add mousemove listener to detect hover
-canvas.addEventListener('mousemove', function (e) {
-  if (!gameRunning) {
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-
-    let foundHover = false;
-    gameOverButtons.forEach((btn, i) => {
-      if (mx >= btn.x && mx <= btn.x + btn.w && my >= btn.y && my <= btn.y + btn.h) {
-        hoveredButtonIndex = i;
-        foundHover = true;
-      }
+        if (enemy.y > canvas.height) enemies.splice(index, 1);
     });
-    if (!foundHover) hoveredButtonIndex = -1;
-  } else {
-    hoveredButtonIndex = -1;
-  }
-});
-
-
-// Mouse interaction on game over popup buttons
-canvas.addEventListener('mousemove', (e) => {
-  if (!gameRunning) {
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    hoveredButtonIndex = gameOverButtons.findIndex(btn =>
-      mx >= btn.x && mx <= btn.x + btn.w && my >= btn.y && my <= btn.y + btn.h
-    );
-  }
-});
-
-canvas.addEventListener('click', (e) => {
-  if (!gameRunning && hoveredButtonIndex !== -1) {
-    if (hoveredButtonIndex === 0) restartGame();
-    else if (hoveredButtonIndex === 1) quitGame();
-  }
-});
-
-function restartGame() {
-  score = 0;
-  lives = 3;
-  level = 1;
-  speedFactor = 1;
-  player.x = 370;
-  player.y = 500;
-  player.invincible = false;
-  bullets = [];
-  enemies = [];
-  explosions = [];
-  gameRunning = true;
 }
 
-function quitGame() {
-  alert('Thanks for playing! See you next time.');
-  window.location.href = 'index.html'; // Or wherever the user should go
+// -------------------- COLLISIONS --------------------
+function checkCollisions() {
+    bullets.forEach((bullet, bIndex) => {
+        enemies.forEach((enemy, eIndex) => {
+            if (
+                bullet.x < enemy.x + enemy.width &&
+                bullet.x + 6 > enemy.x &&
+                bullet.y < enemy.y + enemy.height &&
+                bullet.y + 12 > enemy.y
+            ) {
+                bullets.splice(bIndex, 1);
+                enemy.hp--;
+                if (enemy.hp <= 0) {
+                    createExplosion(enemy.x, enemy.y);
+                    sounds.explosion.currentTime = 0;
+                    sounds.explosion.play();
+                    enemies.splice(eIndex, 1);
+                    score += 10;
+                }
+            }
+        });
+    });
 }
 
-// Main game loop
+function createExplosion(x, y) {
+    explosions.push({ x, y, frame: 0 });
+}
+
+function updateExplosions() {
+    explosions.forEach((exp, i) => {
+        exp.frame++;
+        if (exp.frame >= explosionFrames.length * 5) explosions.splice(i, 1);
+    });
+}
+
+function drawExplosions() {
+    explosions.forEach(exp => {
+        const frameIndex = Math.floor(exp.frame / 5);
+        ctx.drawImage(explosionFrames[frameIndex], exp.x, exp.y, 50, 50);
+    });
+}
+
+// -------------------- PLAYER --------------------
+function updatePlayer() {
+    if (keys["ArrowLeft"] && player.x > 0) player.x -= player.speed;
+    if (keys["ArrowRight"] && player.x + player.width < canvas.width) player.x += player.speed;
+}
+
+function checkPlayerHit() {
+    if (invincible) {
+        invincibilityTimer--;
+        if (invincibilityTimer <= 0) invincible = false;
+        return;
+    }
+
+    enemies.forEach(enemy => {
+        if (
+            player.x < enemy.x + enemy.width &&
+            player.x + player.width > enemy.x &&
+            player.y < enemy.y + enemy.height &&
+            player.y + player.height > enemy.y
+        ) {
+            loseLife();
+        }
+    });
+}
+
+function loseLife() {
+    lives--;
+    if (lives <= 0) {
+        isGameOver = true;
+        sounds.gameover.play();
+    } else {
+        sounds.respawn.play();
+        invincible = true;
+        invincibilityTimer = 120;
+    }
+}
+
+// -------------------- LEVEL --------------------
+function updateLevel() {
+    if (level < maxLevel) {
+        const thresholds = [50, 100, 200, 350, 500, 700, 900, 1150];
+        if (score >= thresholds[level - 1]) level++;
+    }
+}
+
+// -------------------- GAME LOOP --------------------
 function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (gamePaused || isGameOver) return;
 
-  drawBackground();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if (gameRunning) {
-    movePlayer();
-    updateBullets();
+    updatePlayer();
+    spawnEnemies();
     updateEnemies();
+    checkPlayerHit();
     checkCollisions();
     updateExplosions();
     updateLevel();
 
-    // Enemy spawn logic — limit count by level
-    if (enemies.length < 5 + level) {
-      if (Math.random() < 0.02 * speedFactor) spawnEnemy();
-    }
+    bullets.forEach((bullet, i) => {
+        bullet.y -= bullet.speed;
+        if (bullet.y < 0 || bullet.y > canvas.height) bullets.splice(i, 1);
+    });
 
-    if (!canShoot) {
-      shootCooldownCounter++;
-      if (shootCooldownCounter >= shootCooldownFrames) {
-        canShoot = true;
-      }
-    }
-
-    drawPlayer();
-    drawBullets();
-    drawEnemies();
+    ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+    enemies.forEach(e => e.draw());
+    bullets.forEach(b => ctx.fillRect(b.x, b.y, 6, 12));
     drawExplosions();
+
     drawHUD();
-  } else {
-    drawGameOverPopup();
-  }
 
-  requestAnimationFrame(gameLoop);
+    if (!isGameOver) requestAnimationFrame(gameLoop);
 }
 
-function drawExplosions() {
-  explosions.forEach(ex => {
-    const img = explosionFrames[ex.frame];
-    if (img) ctx.drawImage(img, ex.x, ex.y, 64, 64);
-  });
+function drawHUD() {
+    ctx.fillStyle = "white";
+    ctx.font = "20px Arial";
+    ctx.fillText(`Score: ${score}`, 10, 25);
+    ctx.fillText(`Level: ${level}`, 10, 50);
+    ctx.fillText(`Lives: ${lives}`, 10, 75);
+    if (gamePaused) ctx.fillText("PAUSED", canvas.width / 2 - 40, canvas.height / 2);
+    if (isGameOver) ctx.fillText("GAME OVER - Press R to Restart", canvas.width / 2 - 120, canvas.height / 2);
 }
 
-// Controls
-window.addEventListener('keydown', (e) => {
-  keys[e.key] = true;
-  if (e.key === ' ') shoot();
+document.addEventListener("keydown", (e) => {
+    if (isGameOver && e.code === "KeyR") window.location.reload();
 });
 
-window.addEventListener('keyup', (e) => {
-  keys[e.key] = false;
-});
-
-gameLoop();
+// -------------------- START GAME --------------------
+sounds.startup.play();
+setVolume(1.0);
+requestAnimationFrame(gameLoop);

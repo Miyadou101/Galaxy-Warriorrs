@@ -6,24 +6,24 @@
   <title>Galaxy Warriors</title>
 
   <!-- Main styles -->
-  <link href="style.css" rel="stylesheet" />
-  <link href="style_shooter.css" rel="stylesheet" />
+  <link href="style/style.css" rel="stylesheet" />
+  <link href="style/style_shooter.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 
-  <!-- Arcade font from Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=PressStart2P&display=swap" rel="stylesheet" />
 
+  
   <style>
     /* Inline fallback: Pixelated arcade font styling */
     @font-face {
-      font-family: 'PressStart2P';
-      src: url('https://fonts.gstatic.com/s/pressstart2p/v14/e3t4euO8T0W6zUPdJOPVF8mW04kZ8hFtUvKFDik.woff2') format('woff2');
+      font-family: 'VT323';
+      src: url('https://fonts.gstatic.com/s/orbitron/v14/e3t4euO8T0W6zUPdJOPVF8mW04kZ8hFtUvKFDik.woff2') format('woff2');
       font-weight: normal;
       font-style: normal;
     }
 
     .arcade-title {
-      font-family: 'PressStart2P', monospace;
-      font-size: 2.5rem;
+      font-family: 'VT323', monospace;
+      font-size: 4.5rem;
       color: #0ff; /* Neon glow effect */
       text-shadow:
         0 0 5px #0ff,
@@ -41,7 +41,7 @@
     body {
       background-color: #000;
       color: #0ff;
-      font-family: 'PressStart2P', monospace;
+      font-family: 'VT323', monospace;
       margin: 0;
       padding: 0;
       height: 100vh;
@@ -66,8 +66,8 @@
     }
 
     .btn {
-      font-family: 'PressStart2P', monospace;
-      font-size: 1rem;
+      font-family: 'VT323', monospace;
+      font-size: 2rem;
       padding: 1rem 1.5rem;
       color: #0ff;
       background: transparent;
@@ -108,7 +108,7 @@
       padding: 1.5rem 2rem;
       max-width: 320px;
       color: #0ff;
-      font-size: 0.75rem;
+      font-size: 1.5rem;
       text-align: center;
       border-radius: 8px;
       box-shadow: 0 0 20px #0ff;
@@ -116,14 +116,14 @@
     }
 
     .modal-content h2 {
-      font-size: 1rem;
-      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
       user-select: none;
     }
 
     .close-btn {
-      margin-top: 1rem;
-      font-family: 'PressStart2P', monospace;
+      margin-top: 1.5rem;
+      font-family: 'VT323', monospace;
       font-size: 0.75rem;
       background: transparent;
       border: 2px solid #0ff;
@@ -140,6 +140,9 @@
       color: #000;
       outline: none;
     }
+
+
+  
   </style>
 </head>
 
@@ -160,11 +163,14 @@
   </main>
 
   <!-- Tutorial Modal -->
-  <div id="tutorialModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle" tabindex="-1" hidden>
+  <div id="tutorialModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle" tabindex="-1" hidden >
     <div class="modal-content">
       <h2 id="tutorialTitle">Tutorial</h2>
-      <p>Use arrow keys to move your spaceship.<br />Press SPACE to shoot.</p>
-      <p>Destroy enemies:<br />Enemy 1 is fast and dies with one hit.<br />Enemy 2 is slower and takes two hits.</p>
+      <p>Use ARROW keys to move your Spaceship.<br>
+      Press SPACE to Shoot.<br>
+      Press P to Pause.<br>
+      Press R to Restart.</p>
+      <p>Destroy Enemies<br />Get the Highest Score.<br />And Have Fun .</p>
       <button class="close-btn" id="closeTutorial" aria-label="Close Tutorial Modal">Close</button>
     </div>
   </div>
@@ -175,7 +181,7 @@
       <h2 id="settingsTitle">Settings</h2>
 
       <!-- Volume control input -->
-      <label for="volumeControl">Sound Volume:</label>
+      <label for="volumeControl">Sound Effects Volume:</label>
       <input 
         type="range" 
         id="volumeControl" 

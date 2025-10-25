@@ -4,7 +4,6 @@ let ctx = canvas.getContext("2d");
 canvas.width = 800;
 canvas.height = 600;
 
-// ========== ASSETS ========== //
 const playerImg = new Image();
 playerImg.src = "Images/player.png";
 
@@ -43,7 +42,7 @@ function setVolume(vol) {
     Object.values(sounds).forEach(s => s.volume = vol);
 }
 
-// ========== GAME OBJECTS ========== //
+
 let player = {
     x: 400,
     y: 500,
@@ -69,7 +68,6 @@ let enemyCap = 10;
 let gameRunning = true;
 let gameOverButtons = [];
 
-// ========== EVENT LISTENERS ========== //
 document.addEventListener("keydown", e => keys[e.key] = true);
 document.addEventListener("keyup", e => keys[e.key] = false);
 
@@ -97,7 +95,7 @@ canvas.addEventListener('click', function (e) {
     }
 });
 
-// ========== GAME FUNCTIONS ========== //
+
 function shoot() {
     if (bullets.length < maxBullets) {
         bullets.push({ x: player.x + 22, y: player.y, width: 13.5, height: 22.5, speed: 7 }); // 0.9x size
@@ -151,7 +149,7 @@ function moveEnemies() {
             e.y += baseSpeed;
         } else if (e.type.startsWith("blue")) {
             e.y += baseSpeed;
-            e.x += Math.sin(e.y / 20) * 12; // smoother zigzag
+            e.x += Math.sin(e.y / 20) * 12; 
         }
 
         e.shootTimer++;
@@ -356,3 +354,4 @@ document.fonts.ready.then(() => {
     sounds.startup.play();
     gameLoop();
 });
+
